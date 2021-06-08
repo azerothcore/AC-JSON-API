@@ -1631,12 +1631,11 @@ Route::get('/achievement_progress', function() {
 });
 
 /* Instance Ranks (First Kill) */
-
 Route::get('/first_kill', function() {
 
     if (isset($_GET['year']) && isset($_GET['achievement']) && $_GET['year'] != "" && $_GET['achievement'] != "") {
-      $achievement = $_GET['achievement'];
-      $year = $_GET['year'];
+    $achievement = $_GET['achievement'];
+    $year = $_GET['year'];
     }
     else
         return "Insert achievement and year as parameters";
@@ -1652,7 +1651,7 @@ Route::get('/first_kill', function() {
     WHERE date BETWEEN " . $date1 . " AND " . $date2 . " AND ca.achievement = " . $achievement . " AND c.account > 0;");
 
     return Response::json($result);
-  });
+});
 
 /* Auth */
 
