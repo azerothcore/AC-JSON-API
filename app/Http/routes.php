@@ -1634,8 +1634,8 @@ Route::get('/achievement_progress', function() {
 Route::get('/first_kill', function() {
 
     if (isset($_GET['year']) && isset($_GET['achievement']) && $_GET['year'] != "" && $_GET['achievement'] != "") {
-    $achievement = $_GET['achievement'];
-    $year = $_GET['year'];
+        $achievement = $_GET['achievement'];
+        $year = $_GET['year'];
     }
     else
         return "Insert achievement and year as parameters";
@@ -1895,4 +1895,3 @@ Route::get('ticket/recent/{count}', function($count) {
 });
 
 Route::get('/', 'WelcomeController@index');
-
