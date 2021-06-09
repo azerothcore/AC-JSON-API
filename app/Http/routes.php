@@ -23,7 +23,7 @@ Route::group(["prefix" => "api/v1", "middleware" => "api"], function() {
         Route::any("login", "Auth\AuthController@login");
         Route::any("register", "Auth\AuthController@register");
     });
-    
+
     Route::group(["prefix" => "account", "middleware" => "auth"], function () {
         Route::get("/", "Auth\AccountsController@index");
     });
@@ -1324,7 +1324,7 @@ Route::get('/battleground/deserters/recent/{count}', function($count) {
 
   if (isset($_GET['from']) && $_GET['from'] != "")
     $from = $_GET['from'];
-    
+
   if (isset($_GET['name']) && $_GET['name'] != "")
     $where = "WHERE name LIKE '%" . $_GET['name'] . "%'";
 
@@ -1401,7 +1401,7 @@ Route::get('/auction', function() {
         FROM ' . env('DB_CHARACTERS') . '.auctionhouse AS ah
         LEFT JOIN ' . env('DB_CHARACTERS') . '.item_instance AS ins ON ah.itemguid = ins.guid
         LEFT JOIN ' . env('DB_CHARACTERS') . '.characters AS c ON ah.itemowner = c.guid
-        LEFT JOIN ' . env('DB_CHARACTERS') . '.characters AS c2 ON ah.buyguid = c2.guid LIMIT ' . $itemFrom . ' , ' . $numItem);        
+        LEFT JOIN ' . env('DB_CHARACTERS') . '.characters AS c2 ON ah.buyguid = c2.guid LIMIT ' . $itemFrom . ' , ' . $numItem);
     }
     else
     {
@@ -1590,40 +1590,65 @@ Route::get('/character_achievement/{guid}', function($guid) {
 
 Route::get('/achievement_progress', function() {
 
-    if (isset($_GET['from']) && $_GET['from'] != "")
-        $from = $_GET['from'];
-    else
-        $from = 0;
+    $result = array("error" => "please insert at least one parameter");
 
-    if (isset($_GET['to']) && $_GET['to'] != "")
+    if (isset($_GET['from']) && $_GET['from'] != "") {
+        $from = $_GET['from'];
+    } else {
+        $from = 0;
+    }
+
+    if (isset($_GET['to']) && $_GET['to'] != "") {
         $to = $_GET['to'];
-    else
+    } else {
         $to = 20;
+    }
 
     if (isset($_GET['guid']) && $_GET['guid'] != "" && isset($_GET['category']) && $_GET['category'] != "") {
 
         $result = DB::select("SELECT ach.ID AS ID, acc.ID AS criteria, counter, ach.Name, ach.Description, ach.Points, ach.Category, ach.icon, acc.Quantity
-	FROM " . env('DB_CHARACTERS') . ".character_achievement_progress as ach_progress
-	JOIN " . env('DB_DBC') . ".achievementCriteria AS acc ON ach_progress.criteria = acc.ID
-	JOIN " . env('DB_DBC') . ".achievement AS ach ON ach.ID = acc.Achievement
-	WHERE ach.category=" . $_GET['category'] . " AND guid=" . $_GET['guid']);
+        FROM " . env('DB_CHARACTERS') . ".character_achievement_progress as ach_progress
+        JOIN " . env('DB_DBC') . ".achievementCriteria AS acc ON ach_progress.criteria = acc.ID
+        JOIN " . env('DB_DBC') . ".achievement AS ach ON ach.ID = acc.Achievement
+        WHERE ach.category=" . $_GET['category'] . " AND guid=" . $_GET['guid']);
 
-    }
-    else if (isset($_GET['guid']) && $_GET['guid'] != "") {
+    } else if (isset($_GET['guid']) && $_GET['guid'] != "") {
 
         $result = DB::select("SELECT acc.ID AS criteria, Achievement AS ID, aca.ID as CategoryID, aca.parentID, aca.Name as Category, aca2.Name as ParentCategory, ac.Name, ac.Description, acc.Description, Faction, Map, icon
-	FROM " . env('DB_DBC') . ".achievementCriteria as acc
-	JOIN " . env('DB_DBC') . ".achievement AS ac ON acc.Achievement = ac.ID
-	JOIN " . env('DB_DBC') . ".achievementCategory AS aca ON ac.category = aca.ID
-	JOIN " . env('DB_DBC') . ".achievementCategory AS aca2 ON aca.ParentID= aca2.ID
-	WHERE acc.ID IN (
-		SELECT ac.criteria
-		FROM " . env('DB_CHARACTERS') . ".character_achievement_progress AS ac
-		JOIN " . env('DB_CHARACTERS') . ".characters AS c ON ac.guid = c.guid
-		WHERE ac.guid = " . $_GET['guid'] . "
-	)");
-
+        FROM " . env('DB_DBC') . ".achievementCriteria as acc
+        JOIN " . env('DB_DBC') . ".achievement AS ac ON acc.Achievement = ac.ID
+        JOIN " . env('DB_DBC') . ".achievementCategory AS aca ON ac.category = aca.ID
+        JOIN " . env('DB_DBC') . ".achievementCategory AS aca2 ON aca.ParentID= aca2.ID
+        WHERE acc.ID IN (
+            SELECT ac.criteria
+            FROM " . env('DB_CHARACTERS') . ".character_achievement_progress AS ac
+            JOIN " . env('DB_CHARACTERS') . ".characters AS c ON ac.guid = c.guid
+            WHERE ac.guid = " . $_GET['guid'] . "
+        )");
     }
+
+    return Response::json($result);
+});
+
+/* Instance Ranks (First Kill) */
+Route::get('/first_kill', function() {
+
+    if (isset($_GET['year']) && isset($_GET['achievement']) && $_GET['year'] != "" && $_GET['achievement'] != "") {
+        $achievement = $_GET['achievement'];
+        $year = $_GET['year'];
+    }
+    else
+        return "Insert achievement and year as parameters";
+
+    $date1 = (new DateTime($year . "-01-01"))->getTimestamp();
+    $date2 = (new DateTime($year . "-12-31"))->getTimestamp();
+
+    $result = DB::select("SELECT DISTINCT ca.guid AS guid, c.name, c.race, c.class, c.gender, c.level, g.name AS guild, ca.date
+    FROM " . env('DB_CHARACTERS') . ".character_achievement AS ca
+    LEFT JOIN " . env('DB_CHARACTERS') . ".characters AS c ON ca.guid = c.guid
+    LEFT JOIN " . env('DB_CHARACTERS') . ".guild_member AS gm ON gm.guid = ca.guid
+    LEFT JOIN " . env('DB_CHARACTERS') . ".guild AS g ON gm.guildid = g.guildid
+    WHERE date BETWEEN " . $date1 . " AND " . $date2 . " AND ca.achievement = " . $achievement . " AND c.account > 0;");
 
     return Response::json($result);
 });
@@ -1870,4 +1895,3 @@ Route::get('ticket/recent/{count}', function($count) {
 });
 
 Route::get('/', 'WelcomeController@index');
-
